@@ -1,19 +1,16 @@
 {
   "name": "@JetJadeja/binary-markets",
-  "description": "Smart contracts for splitting ERC20 collateral tokens into binary outcome tokens with an integrated AMM router for efficient position trading",
   "version": "1.0.0",
   "author": {
     "name": "JetJadeja",
     "url": "https://github.com/JetJadeja"
-  },
-  "dependencies": {
-    "@openzeppelin/contracts": "5.3.0"
   },
   "devDependencies": {
     "forge-std": "github:foundry-rs/forge-std#v1.9.7",
     "prettier": "^3.5",
     "solhint": "^5.1"
   },
+  "description": "Smart contracts for splitting ERC20 collateral tokens into binary outcome tokens with an integrated AMM router for efficient position trading",
   "keywords": [
     "blockchain",
     "ethereum",
