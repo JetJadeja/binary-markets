@@ -43,11 +43,6 @@ interface IMarketFactory {
     /// @return The address of the market (zero if not deployed)
     function getMarket(bytes32 salt) external view returns (address);
 
-    /// @notice Returns the deployed market address for a given salt
-    /// @param salt The salt used to deploy the market
-    /// @return The address of the deployed market (zero address if not deployed)
-    function markets(bytes32 salt) external view returns (address);
-
     /// @notice Returns the collateral token used by all markets
     /// @return The address of the collateral token
     function collateralToken() external view returns (address);
