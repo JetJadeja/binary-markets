@@ -2,4 +2,5 @@
 vendor/=vendor/
 forge-std/=lib/forge-std/src/
 solady/=lib/solady/src/
-
+@uniswap/v3-core/contracts/=vendor/v3-core/
+@uniswap/v3-periphery/contracts/=vendor/v3-periphery/
