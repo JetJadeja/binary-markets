@@ -1,10 +1,12 @@
 # Binary Markets
 
-A smart contract system for creating binary prediction markets with integrated AMM trading via Uniswap V3. Split ERC20 collateral into binary outcome tokens and trade them efficiently through a custom router implementation.
+A smart contract system for creating binary prediction markets with integrated AMM trading via Uniswap V3. Split ERC20
+collateral into binary outcome tokens and trade them efficiently through a custom router implementation.
 
 ## Overview
 
 This project implements a prediction markets infrastructure where users can:
+
 - **Split** collateral tokens into two binary outcome tokens (Token A & Token B) at a 1:1 ratio
 - **Merge** equal amounts of both tokens back to recover collateral
 - **Trade** position tokens directly for collateral through Uniswap V3 pools
@@ -14,30 +16,18 @@ This project implements a prediction markets infrastructure where users can:
 
 ### Core Contracts
 
-- **`Market.sol`**: Handles split/merge operations, maintaining the invariant that total positions always equal locked collateral
+- **`Market.sol`**: Handles split/merge operations, maintaining the invariant that total positions always equal locked
+  collateral
 - **`PositionToken.sol`**: Minimal ERC20 implementation for binary outcome tokens, mintable only by their parent market
-- **`MarketFactory.sol`**: Deploys markets with deterministic addresses using CREATE2, automatically initializing Uniswap V3 pools
+- **`MarketFactory.sol`**: Deploys markets with deterministic addresses using CREATE2, automatically initializing
+  Uniswap V3 pools
 - **`Router.sol`**: Enables complex swaps between collateral and position tokens through Uniswap V3 integration
-
-### Key Design Decisions
-
-**1. Uniswap V3 Integration**  
-Chose V3 over simpler AMMs for concentrated liquidity and battle-tested infrastructure. All pools initialize at 1:1 price ratio with full-range liquidity, letting market forces discover true prices.
-
-**2. Split-Then-Swap Architecture**  
-Rather than direct swaps, the router always splits collateral first, then swaps unwanted tokens. This maintains the backing invariant and ensures positions can always merge back to collateral.
-
-**3. Deterministic Deployment**  
-CREATE2 deployment with market names as salts enables address prediction without storage overhead. The factory can compute market addresses on-the-fly using `getMarket()`.
-
-**4. Gas Optimizations**  
-Uses Solady's optimized libraries, immutable variables where possible, and minimal storage operations. Position tokens inherit from Solady's efficient ERC20 implementation.
 
 ## Installation
 
 ```bash
 # Clone the repository
-git clone <repository-url>
+git clone https://github.com/JetJadeja/binary-markets.git
 cd binary-markets
 
 # Install dependencies with Bun
@@ -68,12 +58,14 @@ forge fmt
 ## Testing
 
 The test suite covers core functionality:
+
 - Market creation through the factory
 - Split/merge operations maintaining 1:1 ratios
 - AMM swaps via Uniswap V3
 - Edge cases like slippage and deadline protection
 
 Run specific tests:
+
 ```bash
 forge test --match-test testSplitAndMerge
 forge test --match-test testSwapCollateralForPosition
