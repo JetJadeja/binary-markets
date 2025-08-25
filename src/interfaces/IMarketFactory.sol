@@ -33,6 +33,11 @@ interface IMarketFactory {
     /// @param _router The address of the router contract
     function setRouter(address _router) external;
 
+    /// @notice Sets the minimum initial collateral amount
+    /// @dev Only the owner can set the minimum initial collateral amount
+    /// @param _minimumCollateral The minimum initial collateral amount
+    function setMinimumCollateral(uint256 _minimumCollateral) external;
+
     /*///////////////////////////////////////////////////////////////
                               VIEW FUNCTIONS
     //////////////////////////////////////////////////////////////*/
@@ -49,4 +54,8 @@ interface IMarketFactory {
     /// @notice Returns the router address
     /// @return The address of the router contract
     function router() external view returns (address);
+
+    /// @notice Returns the minimum initial collateral amount
+    /// @return The minimum initial collateral amount
+    function minimumCollateral() external view returns (uint256);
 }

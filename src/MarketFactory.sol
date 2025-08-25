@@ -28,6 +28,9 @@ contract MarketFactory is IMarketFactory, Ownable {
     /// @notice The address of the router contract
     address public router;
 
+    /// @notice Minimum initial collateral amount for a market
+    uint256 public minimumCollateral;
+
     /*///////////////////////////////////////////////////////////////
                           CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
@@ -88,5 +91,12 @@ contract MarketFactory is IMarketFactory, Ownable {
     /// @param _router The address of the router contract
     function setRouter(address _router) external onlyOwner {
         router = _router;
+    }
+
+    /// @notice Sets the minimum initial collateral amount
+    /// @dev Only the owner can set the minimum initial collateral amount
+    /// @param _minimumCollateral The minimum initial collateral amount
+    function setMinimumCollateral(uint256 _minimumCollateral) external onlyOwner {
+        minimumCollateral = _minimumCollateral;
     }
 }
