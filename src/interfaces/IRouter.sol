@@ -12,13 +12,11 @@ interface IRouter {
     /// @param market The market address for splitting collateral
     /// @param tokenA The address of token A
     /// @param tokenB The address of token B
-    /// @param fee The fee for the pool
     /// @param initialLiquidity The amount of collateral to use for initial liquidity
     function deployPool(
         address market,
         address tokenA,
         address tokenB,
-        uint24 fee,
         uint256 initialLiquidity
     )
         external

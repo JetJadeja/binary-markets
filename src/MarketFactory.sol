@@ -33,9 +33,6 @@ contract MarketFactory is IMarketFactory, Ownable {
     /// @notice Minimum initial collateral amount for a market
     uint256 public minimumCollateral;
 
-    /// @notice Default fee tier for Uniswap V3 pools (500 = 0.05%, lowest tier)
-    uint24 public constant DEFAULT_POOL_FEE = 500;
-
     /*///////////////////////////////////////////////////////////////
                           CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
@@ -84,7 +81,7 @@ contract MarketFactory is IMarketFactory, Ownable {
         SafeTransferLib.safeTransferFrom(collateralToken, msg.sender, router, initialCollateral);
 
         // Deploy Uniswap V3 pool and add initial liquidity
-        IRouter(router).deployPool(market, tokenA, tokenB, DEFAULT_POOL_FEE, initialCollateral);
+        IRouter(router).deployPool(market, tokenA, tokenB, initialCollateral);
 
         // Emit event
         emit MarketCreated(market, tokenA, tokenB, name, msg.sender);

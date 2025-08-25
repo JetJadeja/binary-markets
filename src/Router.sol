@@ -7,7 +7,7 @@ import { IMarket } from "./interfaces/IMarket.sol";
 import { IUniswapV3Factory } from "vendor/v3-core/interfaces/IUniswapV3Factory.sol";
 import { IUniswapV3Pool } from "vendor/v3-core/interfaces/IUniswapV3Pool.sol";
 import { TickMath } from "vendor/v3-core/libraries/TickMath.sol";
-import { NonfungiblePositionManager } from "vendor/v3-periphery/NonfungiblePositionManager.sol";
+import { INonfungiblePositionManager } from "vendor/v3-periphery/interfaces/INonfungiblePositionManager.sol";
 
 import { SafeTransferLib } from "solady/utils/SafeTransferLib.sol";
 
@@ -16,7 +16,7 @@ import { SafeTransferLib } from "solady/utils/SafeTransferLib.sol";
 /// @notice Enable direct swaps between collateral and positions via Uniswap V3
 contract Router is IRouter {
     /*///////////////////////////////////////////////////////////////
-                            IMMUTABLES
+                                IMMUTABLES
     //////////////////////////////////////////////////////////////*/
 
     /// @notice The market factory contract address
@@ -29,7 +29,10 @@ contract Router is IRouter {
     IUniswapV3Factory public immutable uniswapV3Factory;
 
     /// @notice The Uniswap V3 position manager for adding liquidity
-    NonfungiblePositionManager public immutable positionManager;
+    INonfungiblePositionManager public immutable positionManager;
+
+    /// @notice Default fee tier for Uniswap V3 pools (500 = 0.05%, lowest tier)
+    uint24 public constant DEFAULT_POOL_FEE = 500;
 
     /*///////////////////////////////////////////////////////////////
                          MODIFIERS
@@ -52,7 +55,7 @@ contract Router is IRouter {
         factory = _factory;
         collateralToken = _collateralToken;
         uniswapV3Factory = IUniswapV3Factory(_uniswapV3Factory);
-        positionManager = NonfungiblePositionManager(_positionManager);
+        positionManager = INonfungiblePositionManager(_positionManager);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -64,7 +67,6 @@ contract Router is IRouter {
     /// @param market The market address for splitting collateral
     /// @param tokenA The address of token A
     /// @param tokenB The address of token B
-    /// @param fee The fee for the pool (e.g., 500 for 0.05%)
     /// @param initialLiquidity The amount of collateral to use for initial liquidity
     /// @return pool The address of the deployed pool
     /// @return tokenId The NFT token ID of the liquidity position
@@ -72,7 +74,6 @@ contract Router is IRouter {
         address market,
         address tokenA,
         address tokenB,
-        uint24 fee,
         uint256 initialLiquidity
     )
         external
@@ -83,7 +84,7 @@ contract Router is IRouter {
         (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
 
         // Create the pool
-        pool = uniswapV3Factory.createPool(token0, token1, fee);
+        pool = uniswapV3Factory.createPool(token0, token1, DEFAULT_POOL_FEE);
 
         // Initialize the pool with 1:1 price ratio (equal value for both tokens)
         // sqrtPriceX96 = sqrt(1) * 2^96 = 2^96
@@ -109,17 +110,17 @@ contract Router is IRouter {
 
         // Add liquidity to the pool
         (tokenId,,,) = positionManager.mint(
-            NonfungiblePositionManager.MintParams({
+            INonfungiblePositionManager.MintParams({
                 token0: token0,
                 token1: token1,
-                fee: fee,
+                fee: DEFAULT_POOL_FEE,
                 tickLower: tickLower,
                 tickUpper: tickUpper,
                 amount0Desired: initialLiquidity,
                 amount1Desired: initialLiquidity,
                 amount0Min: initialLiquidity - 1, // Allow minimal slippage for rounding
                 amount1Min: initialLiquidity - 1,
-                recipient: factory, // Send LP NFT to factory
+                recipient: msg.sender, // Send LP NFT to factory
                 deadline: block.timestamp
             })
         );
