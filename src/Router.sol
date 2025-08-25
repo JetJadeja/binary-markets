@@ -4,7 +4,7 @@ pragma solidity 0.8.29;
 import { IRouter } from "./interfaces/IRouter.sol";
 
 /// @title Router
-/// @author binary-markets
+/// @author Jet Jadeja <jjadeja@usc.edu>
 /// @notice Enable direct swaps between collateral and positions via Uniswap V3
 contract Router is IRouter {
     /*///////////////////////////////////////////////////////////////

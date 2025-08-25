@@ -5,7 +5,7 @@ import { ERC20 } from "solady/tokens/ERC20.sol";
 import { Ownable } from "solady/auth/Ownable.sol";
 
 /// @title PositionToken
-/// @author binary-markets
+/// @author Jet Jadeja <jjadeja@usc.edu>
 /// @notice Minimal ERC20 token representing binary outcome positions
 contract PositionToken is ERC20, Ownable {
     /*///////////////////////////////////////////////////////////////
