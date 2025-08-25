@@ -57,18 +57,19 @@ contract Market is IMarket {
     /// @notice Splits collateral into equal amounts of position tokens
     /// @dev Takes collateral from sender and mints equal amounts of tokenA and tokenB to recipient
     /// @param amount The amount of collateral to split
+    /// @param from The address to take collateral from
     /// @param recipient The address to receive the position tokens
     /// @return The amount of position tokens minted (equal to collateral amount)
-    function split(uint256 amount, address recipient) external returns (uint256) {
+    function split(uint256 amount, address from, address recipient) external returns (uint256) {
         // Transfer collateral from sender to this contract
-        collateralToken.safeTransferFrom(msg.sender, address(this), amount);
+        collateralToken.safeTransferFrom(from, address(this), amount);
 
         // Mint equal amounts of both position tokens to recipient
         PositionToken(tokenA).mint(recipient, amount);
         PositionToken(tokenB).mint(recipient, amount);
 
         // Emit split event
-        emit Split(msg.sender, recipient, amount);
+        emit Split(from, recipient, amount);
 
         return amount;
     }

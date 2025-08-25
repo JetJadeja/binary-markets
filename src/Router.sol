@@ -93,11 +93,8 @@ contract Router is IRouter {
         uint160 sqrtPriceX96 = 2 ** 96;
         IUniswapV3Pool(pool).initialize(sqrtPriceX96);
 
-        // Approve market to spend collateral
-        collateralToken.safeApprove(market, initialLiquidity);
-
         // Split collateral into equal amounts of position tokens
-        IMarket(market).split(initialLiquidity, address(this));
+        IMarket(market).split(initialLiquidity, msg.sender, address(this));
 
         // Approve position manager to spend both tokens
         token0.safeApprove(address(positionManager), initialLiquidity);

@@ -27,9 +27,10 @@ interface IMarket {
 
     /// @notice Splits collateral into equal amounts of position tokens
     /// @param amount The amount of collateral to split
+    /// @param from The address to take collateral from
     /// @param recipient The address to receive the position tokens
     /// @return The amount of position tokens minted
-    function split(uint256 amount, address recipient) external returns (uint256);
+    function split(uint256 amount, address from, address recipient) external returns (uint256);
 
     /// @notice Merges equal amounts of position tokens back into collateral
     /// @param amount The amount of each position token to merge

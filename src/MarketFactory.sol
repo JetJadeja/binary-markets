@@ -79,8 +79,8 @@ contract MarketFactory is IMarketFactory, Ownable {
         tokenA = Market(market).tokenA();
         tokenB = Market(market).tokenB();
 
-        // Transfer collateral from msg.sender to router for initial liquidity
-        collateralToken.safeTransferFrom(msg.sender, router, initialCollateral);
+        // Approve market to spend collateral
+        collateralToken.safeApprove(market, initialCollateral);
 
         // Deploy Uniswap V3 pool and add initial liquidity
         IRouter(router).deployPool(market, tokenA, tokenB, initialCollateral);
