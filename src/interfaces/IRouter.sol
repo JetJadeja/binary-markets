@@ -45,6 +45,7 @@ interface IRouter {
     /// @param market The market address
     /// @param sellTokenA True to sell token A, false to sell token B
     /// @param amountIn The amount of position tokens to swap
+    /// @param swapAmount The exact amount to swap to balance positions
     /// @param minAmountOut The minimum amount of collateral to receive
     /// @param recipient The address to receive the collateral
     /// @param deadline The deadline for the swap
@@ -53,23 +54,7 @@ interface IRouter {
         address market,
         bool sellTokenA,
         uint256 amountIn,
-        uint256 minAmountOut,
-        address recipient,
-        uint256 deadline
-    )
-        external
-        returns (uint256 amountOut);
-
-    /// @notice Swaps one position token for another
-    /// @param market The market address
-    /// @param amountIn The amount of position tokens to swap
-    /// @param minAmountOut The minimum amount of position tokens to receive
-    /// @param recipient The address to receive the position tokens
-    /// @param deadline The deadline for the swap
-    /// @return amountOut The amount of position tokens received
-    function swapPositionForPosition(
-        address market,
-        uint256 amountIn,
+        uint256 swapAmount,
         uint256 minAmountOut,
         address recipient,
         uint256 deadline

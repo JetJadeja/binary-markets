@@ -17,6 +17,10 @@ import { SafeTransferLib } from "solady/utils/SafeTransferLib.sol";
 contract Router is IRouter {
     using SafeTransferLib for address;
 
+    /// @notice Data passed through swap callbacks
+    /// @param tokenA The first token in the market
+    /// @param tokenB The second token in the market
+    /// @param payer The address that will pay for the swap
     struct SwapCallbackData {
         address tokenA;
         address tokenB;
@@ -46,6 +50,7 @@ contract Router is IRouter {
                          MODIFIERS
     //////////////////////////////////////////////////////////////*/
 
+    /// @notice Restricts function access to the factory contract only
     modifier onlyFactory() {
         if (msg.sender != factory) revert("Caller must be factory");
         _;
@@ -106,10 +111,10 @@ contract Router is IRouter {
         token0.safeApprove(address(positionManager), initialLiquidity);
         token1.safeApprove(address(positionManager), initialLiquidity);
 
-        // Calculate tick spacing based on fee
+        // Calculate tick spacing based on fee tier
         int24 tickSpacing = IUniswapV3Pool(pool).tickSpacing();
 
-        // Calculate max tick range based on tick spacing
+        // Calculate full range ticks aligned to tick spacing
         int24 tickLower = (TickMath.MIN_TICK / tickSpacing) * tickSpacing;
         int24 tickUpper = (TickMath.MAX_TICK / tickSpacing) * tickSpacing;
 
@@ -153,22 +158,30 @@ contract Router is IRouter {
         external
         returns (uint256 amountOut)
     {
+        // Validate transaction deadline
         require(block.timestamp <= deadline, "Transaction expired");
 
+        // Get position token addresses from market
         (address tokenA, address tokenB) = IMarket(market).getTokens();
 
+        // Pull collateral from user and approve market to spend it
         collateralToken.safeTransferFrom(msg.sender, address(this), amountIn);
         collateralToken.safeApprove(market, amountIn);
 
+        // Split collateral into equal amounts of both position tokens
         IMarket(market).split(amountIn, address(this), address(this));
 
+        // Get the Uniswap V3 pool for these tokens
         address pool = _getPoolAddress(tokenA, tokenB);
         require(pool != address(0), "Pool does not exist");
 
+        // Execute swap to convert unwanted token to desired token
         amountOut = _executeSwap(pool, tokenA, tokenB, buyTokenA, amountIn);
 
+        // Enforce slippage protection
         require(amountOut >= minAmountOut, "Insufficient output amount");
 
+        // Transfer all of the desired token to recipient
         address tokenToBuy = buyTokenA ? tokenA : tokenB;
         tokenToBuy.safeTransfer(recipient, amountOut);
 
@@ -180,6 +193,7 @@ contract Router is IRouter {
     /// @param market The address of the prediction market
     /// @param sellTokenA True to sell token A, false to sell token B
     /// @param amountIn The amount of position tokens to swap
+    /// @param swapAmount The exact amount to swap to balance positions
     /// @param minAmountOut The minimum amount of collateral tokens to receive (slippage protection)
     /// @param recipient The address that will receive the collateral tokens
     /// @param deadline The timestamp after which the transaction will revert
@@ -188,32 +202,78 @@ contract Router is IRouter {
         address market,
         bool sellTokenA,
         uint256 amountIn,
+        uint256 swapAmount,
         uint256 minAmountOut,
         address recipient,
         uint256 deadline
     )
         external
         returns (uint256 amountOut)
-    { }
+    {
+        // Validate transaction deadline
+        require(block.timestamp <= deadline, "Transaction expired");
 
-    /// @notice Swaps one position token for another through Uniswap V3
-    /// @dev Direct swap between position tokens via the Uniswap V3 pool
-    /// @param market The address of the prediction market
-    /// @param amountIn The amount of position tokens to swap
-    /// @param minAmountOut The minimum amount of position tokens to receive (slippage protection)
-    /// @param recipient The address that will receive the position tokens
-    /// @param deadline The timestamp after which the transaction will revert
-    /// @return amountOut The actual amount of position tokens received
-    function swapPositionForPosition(
-        address market,
-        uint256 amountIn,
-        uint256 minAmountOut,
-        address recipient,
-        uint256 deadline
-    )
-        external
-        returns (uint256 amountOut)
-    { }
+        // Validate swap amount doesn't exceed input
+        require(swapAmount <= amountIn, "Swap amount exceeds input");
+
+        // Get position token addresses from market
+        (address tokenA, address tokenB) = IMarket(market).getTokens();
+
+        // Pull sell tokens from user to router
+        {
+            address sellToken = sellTokenA ? tokenA : tokenB;
+            sellToken.safeTransferFrom(msg.sender, address(this), amountIn);
+        }
+
+        // Get the Uniswap V3 pool for these tokens
+        address pool = _getPoolAddress(tokenA, tokenB);
+        require(pool != address(0), "Pool does not exist");
+
+        uint256 buyTokensReceived;
+
+        if (swapAmount > 0) {
+            // Execute swap in a scope to avoid stack too deep
+            bool zeroForOne = sellTokenA ? (tokenA < tokenB) : (tokenB < tokenA);
+            
+            // Execute the swap on Uniswap V3 pool
+            (int256 amount0Delta, int256 amount1Delta) = IUniswapV3Pool(pool).swap(
+                address(this),
+                zeroForOne,
+                int256(swapAmount),
+                zeroForOne ? TickMath.MIN_SQRT_RATIO + 1 : TickMath.MAX_SQRT_RATIO - 1,
+                abi.encode(SwapCallbackData({ tokenA: tokenA, tokenB: tokenB, payer: address(this) }))
+            );
+
+            // Calculate how many buyTokens we received (negative delta = received)
+            buyTokensReceived = uint256(-(zeroForOne ? amount1Delta : amount0Delta));
+        }
+
+        // Calculate final balance and merge
+        {
+            uint256 mergeAmount = amountIn - swapAmount;
+            
+            // Require exact balance for merge (no partial merges allowed)
+            require(mergeAmount == buyTokensReceived, "Unbalanced positions for merge");
+
+            address sellToken = sellTokenA ? tokenA : tokenB;
+            address buyToken = sellTokenA ? tokenB : tokenA;
+
+            // Approve market to spend both tokens for merge
+            sellToken.safeApprove(market, mergeAmount);
+            buyToken.safeApprove(market, mergeAmount);
+
+            // Merge equal positions back to collateral
+            amountOut = IMarket(market).merge(mergeAmount, address(this));
+        }
+
+        // Enforce slippage protection
+        require(amountOut >= minAmountOut, "Insufficient output amount");
+
+        // Transfer collateral to recipient
+        collateralToken.safeTransfer(recipient, amountOut);
+
+        return amountOut;
+    }
 
     /*///////////////////////////////////////////////////////////////
                                 CALLBACKS
@@ -225,16 +285,21 @@ contract Router is IRouter {
     /// @param amount1Delta The amount of token1 that was sent (negative) or must be received (positive)
     /// @param data Encoded data containing swap context and parameters
     function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata data) external {
+        // Ensure we owe tokens (positive delta means we owe)
         require(amount0Delta > 0 || amount1Delta > 0, "Invalid callback amounts");
 
+        // Decode callback data to get token information
         SwapCallbackData memory decoded = abi.decode(data, (SwapCallbackData));
 
+        // Verify callback is from the legitimate pool
         address expectedPool = _getPoolAddress(decoded.tokenA, decoded.tokenB);
         require(msg.sender == expectedPool, "Invalid callback caller");
 
+        // Order tokens to match Uniswap's token0/token1
         (address token0, address token1) =
             decoded.tokenA < decoded.tokenB ? (decoded.tokenA, decoded.tokenB) : (decoded.tokenB, decoded.tokenA);
 
+        // Determine which token and amount to pay
         uint256 amountToPay;
         address tokenToPay;
         if (amount0Delta > 0) {
@@ -245,6 +310,7 @@ contract Router is IRouter {
             tokenToPay = token1;
         }
 
+        // Transfer payment to the pool
         tokenToPay.safeTransfer(msg.sender, amountToPay);
     }
 
@@ -279,12 +345,15 @@ contract Router is IRouter {
         internal
         returns (uint256 totalAmount)
     {
+        // Determine which token we're selling
         address tokenToSell = buyTokenA ? tokenB : tokenA;
         (address token0,) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
         bool zeroForOne = tokenToSell == token0;
 
+        // Prepare callback data
         bytes memory swapData = abi.encode(SwapCallbackData({ tokenA: tokenA, tokenB: tokenB, payer: address(this) }));
 
+        // Execute the swap on Uniswap V3 pool
         (int256 amount0Delta, int256 amount1Delta) = IUniswapV3Pool(pool).swap(
             address(this),
             zeroForOne,
@@ -293,6 +362,7 @@ contract Router is IRouter {
             swapData
         );
 
+        // Calculate total received (negative delta = we received tokens)
         uint256 amountReceived = uint256(-(zeroForOne ? amount1Delta : amount0Delta));
         totalAmount = amountIn + amountReceived;
     }
@@ -315,6 +385,7 @@ contract Router is IRouter {
     /// @param market The address of the prediction market
     /// @return The address of the Uniswap V3 pool for the market's position tokens
     function getPoolAddress(address market) external view returns (address) {
+        // Get the tokens for the market
         (address tokenA, address tokenB) = IMarket(market).getTokens();
         return _getPoolAddress(tokenA, tokenB);
     }
