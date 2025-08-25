@@ -20,13 +20,18 @@ interface IMarketFactory {
                             EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    /// TODO: CHANGE THIS WE MIGHT HAVE A REQUIRED INITIAL LIQUIDITY AMOUNT OR SOMETHING (TBD)
     /// @notice Creates a new prediction market
     /// @param name The name of the market
+    /// @param initialCollateral The initial collateral amount for the market
     /// @return market The address of the deployed market
     /// @return tokenA The address of position token A
     /// @return tokenB The address of position token B
-    function createMarket(string calldata name) external returns (address market, address tokenA, address tokenB);
+    function createMarket(
+        string calldata name,
+        uint256 initialCollateral
+    )
+        external
+        returns (address market, address tokenA, address tokenB);
 
     /// @notice Sets the router address
     /// @dev Only the owner can set the router address

@@ -51,7 +51,17 @@ contract MarketFactory is IMarketFactory, Ownable {
     /// @notice Creates a new prediction market with the specified parameters
     /// @dev Deploys a new market contract and its associated position tokens using CREATE2 for deterministic addresses
     /// @param name The name of the market to create
-    function createMarket(string calldata name) external returns (address market, address tokenA, address tokenB) {
+    /// @param initialCollateral The initial collateral amount for the market
+    function createMarket(
+        string calldata name,
+        uint256 initialCollateral
+    )
+        external
+        returns (address market, address tokenA, address tokenB)
+    {
+        // Check if the initial collateral amount is greater than the minimum collateral amount
+        require(initialCollateral >= minimumCollateral, "Initial collateral must be greater than minimum");
+
         // Deploy market using CREATE2
         // Note that if the market already exists, this will revert
         bytes32 salt = keccak256(abi.encodePacked(name));
