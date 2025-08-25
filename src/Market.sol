@@ -2,9 +2,13 @@
 pragma solidity 0.8.29;
 
 import { IMarket } from "./interfaces/IMarket.sol";
+import { PositionToken } from "./PositionToken.sol";
+
+import { SafeTransferLib } from "solady/utils/SafeTransferLib.sol";
+import { FixedPointMathLib } from "solady/utils/FixedPointMathLib.sol";
 
 /// @title Market
-/// @author binary-markets
+/// @author Jet Jadeja <jjadeja@usc.edu>
 /// @notice Handle splitting/merging of collateral into position tokens
 contract Market is IMarket {
     /*///////////////////////////////////////////////////////////////
@@ -32,17 +36,16 @@ contract Market is IMarket {
     //////////////////////////////////////////////////////////////*/
 
     /// @notice Creates a new Market
-    /// @param _collateralToken The collateral token address
     /// @param _name The name of the market
-    /// @param _factory The factory that deployed this market
-    constructor(address _collateralToken, string memory _name, address _factory) {
-        collateralToken = _collateralToken;
+    /// @param _collateralToken The collateral token address
+    constructor(string memory _name, address _collateralToken) {
         name = _name;
-        factory = _factory;
+        collateralToken = _collateralToken;
+        factory = msg.sender;
 
-        // Deploy position tokens in constructor
-        // tokenA = address(new PositionToken(...));
-        // tokenB = address(new PositionToken(...));
+        // Deploy position tokens
+        tokenA = address(new PositionToken(string.concat(_name, " A"), "TA"));
+        tokenB = address(new PositionToken(string.concat(_name, " B"), "TB"));
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -55,7 +58,10 @@ contract Market is IMarket {
     /// @param recipient The address to receive the position tokens
     /// @param data Callback data to pass to the sender after minting
     /// @return The amount of position tokens minted (equal to collateral amount)
-    function split(uint256 amount, address recipient, bytes calldata data) external returns (uint256) { }
+    function split(uint256 amount, address recipient, bytes calldata data) external returns (uint256) {
+        // Transfer the collateral to this contract
+        SafeTransferLib.safeTransferFrom(collateralToken, msg.sender, address(this), amount);
+    }
 
     /// @notice Merges equal amounts of position tokens back into collateral
     /// @dev Burns equal amounts of tokenA and tokenB from sender and returns collateral to recipient

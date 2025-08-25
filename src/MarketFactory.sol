@@ -3,8 +3,11 @@ pragma solidity 0.8.29;
 
 import { IMarketFactory } from "./interfaces/IMarketFactory.sol";
 
+import { Market } from "./Market.sol";
+import { PositionToken } from "./PositionToken.sol";
+
 /// @title MarketFactory
-/// @author binary-markets
+/// @author Jet Jadeja <jjadeja@usc.edu>
 /// @notice Deploy and track prediction markets with deterministic addresses
 contract MarketFactory is IMarketFactory {
     /*///////////////////////////////////////////////////////////////
@@ -16,21 +19,14 @@ contract MarketFactory is IMarketFactory {
     /// @return The address of the collateral token
     address public immutable collateralToken;
 
-    /// @notice The router contract address for market interactions
-    /// @dev Router handles complex market operations and swaps
-    /// @return The address of the router contract
-    address public immutable router;
-
     /*///////////////////////////////////////////////////////////////
                           CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
     /// @notice Creates a new MarketFactory
     /// @param _collateralToken The collateral token for all markets
-    /// @param _router The router contract address
-    constructor(address _collateralToken, address _router) {
+    constructor(address _collateralToken) {
         collateralToken = _collateralToken;
-        router = _router;
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -38,20 +34,40 @@ contract MarketFactory is IMarketFactory {
     //////////////////////////////////////////////////////////////*/
 
     /// @notice Creates a new prediction market with the specified parameters
-    /// @dev Deploys a new market contract and its associated position tokens
+    /// @dev Deploys a new market contract and its associated position tokens using CREATE2 for deterministic addresses
     /// @param name The name of the market to create
-    /// @param initialLiquidity The amount of initial liquidity to provide to the market
-    function createMarket(
-        string calldata name,
-        uint256 initialLiquidity
-    )
-        external
-        returns (address market, address tokenA, address tokenB)
-    { }
+    function createMarket(string calldata name) external returns (address market, address tokenA, address tokenB) {
+        // Deploy market using CREATE2
+        // Note that if the market already exists, this will revert
+        bytes32 salt = keccak256(abi.encodePacked(name));
+        market = address(new Market{ salt: salt }(name, collateralToken));
 
-    /// @notice Returns the market address for a given salt
-    /// @dev Retrieves the deployed market address from the markets mapping
-    /// @param salt The unique identifier to look up the market
-    /// @return The address of the market
-    function getMarket(bytes32 salt) external view returns (address) { }
+        // Get token addresses
+        tokenA = Market(market).tokenA();
+        tokenB = Market(market).tokenB();
+
+        // Emit event
+        emit MarketCreated(market, tokenA, tokenB, name, msg.sender);
+    }
+
+    /// @notice Returns the market address for a given name
+    /// @dev Computes the deterministic address using CREATE2 formula without needing storage
+    /// @param name The unique name of the market
+    /// @return The address of the market (zero if not deployed)
+    function getMarket(string memory name) public view returns (address) {
+        bytes32 salt = keccak256(abi.encodePacked(name));
+
+        // Compute market address
+        bytes memory marketBytecode = abi.encodePacked(type(Market).creationCode, abi.encode(name, collateralToken));
+        address market = address(
+            uint160(uint256(keccak256(abi.encodePacked(bytes1(0xff), address(this), salt, keccak256(marketBytecode)))))
+        );
+
+        // Check if the market actually exists at the computed address
+        if (market.code.length == 0) {
+            return address(0);
+        }
+
+        return market;
+    }
 }

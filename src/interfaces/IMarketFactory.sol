@@ -23,31 +23,21 @@ interface IMarketFactory {
     /// TODO: CHANGE THIS WE MIGHT HAVE A REQUIRED INITIAL LIQUIDITY AMOUNT OR SOMETHING (TBD)
     /// @notice Creates a new prediction market
     /// @param name The name of the market
-    /// @param initialLiquidity The amount of initial liquidity to provide
     /// @return market The address of the deployed market
     /// @return tokenA The address of position token A
     /// @return tokenB The address of position token B
-    function createMarket(
-        string calldata name,
-        uint256 initialLiquidity
-    )
-        external
-        returns (address market, address tokenA, address tokenB);
+    function createMarket(string calldata name) external returns (address market, address tokenA, address tokenB);
 
     /*///////////////////////////////////////////////////////////////
                               VIEW FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice Returns the market address for a given salt
-    /// @param salt The salt to look up
+    /// @notice Returns the market address for a given name
+    /// @param name The name of the market
     /// @return The address of the market (zero if not deployed)
-    function getMarket(bytes32 salt) external view returns (address);
+    function getMarket(string memory name) external view returns (address);
 
     /// @notice Returns the collateral token used by all markets
     /// @return The address of the collateral token
     function collateralToken() external view returns (address);
-
-    /// @notice Returns the router contract address
-    /// @return The address of the router
-    function router() external view returns (address);
 }
