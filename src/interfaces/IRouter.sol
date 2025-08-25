@@ -95,19 +95,4 @@ interface IRouter {
     /// @param market The market address
     /// @return The pool address
     function getPoolAddress(address market) external view returns (address);
-
-    /// @notice Quotes a swap between position tokens
-    /// @param market The market address
-    /// @param tokenAToB True for A to B, false for B to A
-    /// @param amountIn The amount to swap
-    /// @return expectedOut The expected output amount
-    /// @return priceImpact The price impact of the swap
-    function quote(
-        address market,
-        bool tokenAToB,
-        uint256 amountIn
-    )
-        external
-        view
-        returns (uint256 expectedOut, uint256 priceImpact);
 }

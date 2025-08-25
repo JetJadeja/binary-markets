@@ -17,6 +17,12 @@ import { SafeTransferLib } from "solady/utils/SafeTransferLib.sol";
 contract Router is IRouter {
     using SafeTransferLib for address;
 
+    struct SwapCallbackData {
+        address tokenA;
+        address tokenB;
+        address payer;
+    }
+
     /*///////////////////////////////////////////////////////////////
                                 IMMUTABLES
     //////////////////////////////////////////////////////////////*/
@@ -83,7 +89,7 @@ contract Router is IRouter {
         returns (address pool, uint256 tokenId)
     {
         // Order tokens as required by Uniswap (token0 < token1)
-        (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
+        (address token0, address token1) = _getTokensOrdered(tokenA, tokenB);
 
         // Create the pool
         pool = uniswapV3Factory.createPool(token0, token1, DEFAULT_POOL_FEE);
@@ -146,7 +152,28 @@ contract Router is IRouter {
     )
         external
         returns (uint256 amountOut)
-    { }
+    {
+        require(block.timestamp <= deadline, "Transaction expired");
+
+        (address tokenA, address tokenB) = IMarket(market).getTokens();
+
+        collateralToken.safeTransferFrom(msg.sender, address(this), amountIn);
+        collateralToken.safeApprove(market, amountIn);
+
+        IMarket(market).split(amountIn, address(this), address(this));
+
+        address pool = _getPoolAddress(tokenA, tokenB);
+        require(pool != address(0), "Pool does not exist");
+
+        amountOut = _executeSwap(pool, tokenA, tokenB, buyTokenA, amountIn);
+
+        require(amountOut >= minAmountOut, "Insufficient output amount");
+
+        address tokenToBuy = buyTokenA ? tokenA : tokenB;
+        tokenToBuy.safeTransfer(recipient, amountOut);
+
+        return amountOut;
+    }
 
     /// @notice Swaps position tokens for collateral tokens through Uniswap V3
     /// @dev Swaps one position for the other via the pool, then merges positions back to collateral
@@ -197,7 +224,87 @@ contract Router is IRouter {
     /// @param amount0Delta The amount of token0 that was sent (negative) or must be received (positive)
     /// @param amount1Delta The amount of token1 that was sent (negative) or must be received (positive)
     /// @param data Encoded data containing swap context and parameters
-    function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata data) external { }
+    function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata data) external {
+        require(amount0Delta > 0 || amount1Delta > 0, "Invalid callback amounts");
+
+        SwapCallbackData memory decoded = abi.decode(data, (SwapCallbackData));
+
+        address expectedPool = _getPoolAddress(decoded.tokenA, decoded.tokenB);
+        require(msg.sender == expectedPool, "Invalid callback caller");
+
+        (address token0, address token1) =
+            decoded.tokenA < decoded.tokenB ? (decoded.tokenA, decoded.tokenB) : (decoded.tokenB, decoded.tokenA);
+
+        uint256 amountToPay;
+        address tokenToPay;
+        if (amount0Delta > 0) {
+            amountToPay = uint256(amount0Delta);
+            tokenToPay = token0;
+        } else {
+            amountToPay = uint256(amount1Delta);
+            tokenToPay = token1;
+        }
+
+        tokenToPay.safeTransfer(msg.sender, amountToPay);
+    }
+
+    /*///////////////////////////////////////////////////////////////
+                        INTERNAL FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @notice Gets the Uniswap V3 pool address for a pair of tokens
+    /// @dev Orders tokens correctly as required by Uniswap
+    /// @param tokenA First token address
+    /// @param tokenB Second token address
+    /// @return pool The pool address (or address(0) if not exists)
+    function _getPoolAddress(address tokenA, address tokenB) internal view returns (address pool) {
+        (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
+        pool = uniswapV3Factory.getPool(token0, token1, DEFAULT_POOL_FEE);
+    }
+
+    /// @notice Executes a swap on the Uniswap V3 pool
+    /// @param pool The pool address
+    /// @param tokenA Token A address
+    /// @param tokenB Token B address
+    /// @param buyTokenA Whether to buy token A (true) or token B (false)
+    /// @param amountIn The amount to swap
+    /// @return totalAmount The total amount of the desired token after swap
+    function _executeSwap(
+        address pool,
+        address tokenA,
+        address tokenB,
+        bool buyTokenA,
+        uint256 amountIn
+    )
+        internal
+        returns (uint256 totalAmount)
+    {
+        address tokenToSell = buyTokenA ? tokenB : tokenA;
+        (address token0,) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
+        bool zeroForOne = tokenToSell == token0;
+
+        bytes memory swapData = abi.encode(SwapCallbackData({ tokenA: tokenA, tokenB: tokenB, payer: address(this) }));
+
+        (int256 amount0Delta, int256 amount1Delta) = IUniswapV3Pool(pool).swap(
+            address(this),
+            zeroForOne,
+            int256(amountIn),
+            zeroForOne ? TickMath.MIN_SQRT_RATIO + 1 : TickMath.MAX_SQRT_RATIO - 1,
+            swapData
+        );
+
+        uint256 amountReceived = uint256(-(zeroForOne ? amount1Delta : amount0Delta));
+        totalAmount = amountIn + amountReceived;
+    }
+
+    /// @notice Orders two tokens as required by Uniswap (token0 < token1)
+    /// @param tokenA First token
+    /// @param tokenB Second token (can be address(0) if only ordering against tokenA)
+    /// @return token0 The lower address
+    /// @return token1 The higher address
+    function _getTokensOrdered(address tokenA, address tokenB) internal pure returns (address token0, address token1) {
+        (token0, token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
+    }
 
     /*///////////////////////////////////////////////////////////////
                          VIEW FUNCTIONS
@@ -207,22 +314,8 @@ contract Router is IRouter {
     /// @dev Computes the deterministic pool address for the market's position tokens
     /// @param market The address of the prediction market
     /// @return The address of the Uniswap V3 pool for the market's position tokens
-    function getPoolAddress(address market) external view returns (address) { }
-
-    /// @notice Quotes the expected output and price impact for a position-to-position swap
-    /// @dev Simulates the swap to calculate expected output without executing
-    /// @param market The address of the prediction market
-    /// @param tokenAToB True to swap token A for token B, false for B to A
-    /// @param amountIn The amount of tokens to swap
-    /// @return expectedOut The expected amount of tokens to receive
-    /// @return priceImpact The estimated price impact of the swap in basis points
-    function quote(
-        address market,
-        bool tokenAToB,
-        uint256 amountIn
-    )
-        external
-        view
-        returns (uint256 expectedOut, uint256 priceImpact)
-    { }
+    function getPoolAddress(address market) external view returns (address) {
+        (address tokenA, address tokenB) = IMarket(market).getTokens();
+        return _getPoolAddress(tokenA, tokenB);
+    }
 }
