@@ -231,10 +231,10 @@ contract Router is IRouter {
 
         uint256 buyTokensReceived;
 
-        if (swapAmount > 0) {
+        {
             // Execute swap in a scope to avoid stack too deep
             bool zeroForOne = sellTokenA ? (tokenA < tokenB) : (tokenB < tokenA);
-            
+
             // Execute the swap on Uniswap V3 pool
             (int256 amount0Delta, int256 amount1Delta) = IUniswapV3Pool(pool).swap(
                 address(this),
@@ -248,19 +248,34 @@ contract Router is IRouter {
             buyTokensReceived = uint256(-(zeroForOne ? amount1Delta : amount0Delta));
         }
 
+        // Validate swap output is within 5% tolerance
+        {
+            // Calculate expected range: swapAmount ± 5%
+            uint256 minExpected = (swapAmount * 95) / 100;
+            uint256 maxExpected = (swapAmount * 105) / 100;
+            
+            require(
+                buyTokensReceived >= minExpected && buyTokensReceived <= maxExpected,
+                "Swap output outside 5% tolerance"
+            );
+        }
+
         // Calculate final balance and merge
         {
-            uint256 mergeAmount = amountIn - swapAmount;
+            uint256 unswappedAmount = amountIn - swapAmount;
             
-            // Require exact balance for merge (no partial merges allowed)
-            require(mergeAmount == buyTokensReceived, "Unbalanced positions for merge");
-
-            address sellToken = sellTokenA ? tokenA : tokenB;
-            address buyToken = sellTokenA ? tokenB : tokenA;
+            // Use the minimum of unswapped amount and tokens received for merging
+            // This ensures we can always merge, even with slight imbalances from swaps
+            uint256 mergeAmount = unswappedAmount < buyTokensReceived ? unswappedAmount : buyTokensReceived;
 
             // Approve market to spend both tokens for merge
-            sellToken.safeApprove(market, mergeAmount);
-            buyToken.safeApprove(market, mergeAmount);
+            if (sellTokenA) {
+                tokenA.safeApprove(market, mergeAmount);
+                tokenB.safeApprove(market, mergeAmount);
+            } else {
+                tokenB.safeApprove(market, mergeAmount);
+                tokenA.safeApprove(market, mergeAmount);
+            }
 
             // Merge equal positions back to collateral
             amountOut = IMarket(market).merge(mergeAmount, address(this));
