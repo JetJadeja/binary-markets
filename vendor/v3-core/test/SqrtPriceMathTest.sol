@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity =0.8.25;
+pragma solidity 0.8.29;
 
-import {SqrtPriceMath} from '../libraries/SqrtPriceMath.sol';
+import { SqrtPriceMath } from "../libraries/SqrtPriceMath.sol";
 
 contract SqrtPriceMathTest {
     function getNextSqrtPriceFromInput(
@@ -9,7 +9,11 @@ contract SqrtPriceMathTest {
         uint128 liquidity,
         uint256 amountIn,
         bool zeroForOne
-    ) external pure returns (uint160 sqrtQ) {
+    )
+        external
+        pure
+        returns (uint160 sqrtQ)
+    {
         return SqrtPriceMath.getNextSqrtPriceFromInput(sqrtP, liquidity, amountIn, zeroForOne);
     }
 
@@ -18,7 +22,11 @@ contract SqrtPriceMathTest {
         uint128 liquidity,
         uint256 amountIn,
         bool zeroForOne
-    ) external view returns (uint256) {
+    )
+        external
+        view
+        returns (uint256)
+    {
         uint256 gasBefore = gasleft();
         SqrtPriceMath.getNextSqrtPriceFromInput(sqrtP, liquidity, amountIn, zeroForOne);
         return gasBefore - gasleft();
@@ -29,7 +37,11 @@ contract SqrtPriceMathTest {
         uint128 liquidity,
         uint256 amountOut,
         bool zeroForOne
-    ) external pure returns (uint160 sqrtQ) {
+    )
+        external
+        pure
+        returns (uint160 sqrtQ)
+    {
         return SqrtPriceMath.getNextSqrtPriceFromOutput(sqrtP, liquidity, amountOut, zeroForOne);
     }
 
@@ -38,7 +50,11 @@ contract SqrtPriceMathTest {
         uint128 liquidity,
         uint256 amountOut,
         bool zeroForOne
-    ) external view returns (uint256) {
+    )
+        external
+        view
+        returns (uint256)
+    {
         uint256 gasBefore = gasleft();
         SqrtPriceMath.getNextSqrtPriceFromOutput(sqrtP, liquidity, amountOut, zeroForOne);
         return gasBefore - gasleft();
@@ -49,7 +65,11 @@ contract SqrtPriceMathTest {
         uint160 sqrtUpper,
         uint128 liquidity,
         bool roundUp
-    ) external pure returns (uint256 amount0) {
+    )
+        external
+        pure
+        returns (uint256 amount0)
+    {
         return SqrtPriceMath.getAmount0Delta(sqrtLower, sqrtUpper, liquidity, roundUp);
     }
 
@@ -58,7 +78,11 @@ contract SqrtPriceMathTest {
         uint160 sqrtUpper,
         uint128 liquidity,
         bool roundUp
-    ) external pure returns (uint256 amount1) {
+    )
+        external
+        pure
+        returns (uint256 amount1)
+    {
         return SqrtPriceMath.getAmount1Delta(sqrtLower, sqrtUpper, liquidity, roundUp);
     }
 
@@ -67,7 +91,11 @@ contract SqrtPriceMathTest {
         uint160 sqrtUpper,
         uint128 liquidity,
         bool roundUp
-    ) external view returns (uint256) {
+    )
+        external
+        view
+        returns (uint256)
+    {
         uint256 gasBefore = gasleft();
         SqrtPriceMath.getAmount0Delta(sqrtLower, sqrtUpper, liquidity, roundUp);
         return gasBefore - gasleft();
@@ -78,7 +106,11 @@ contract SqrtPriceMathTest {
         uint160 sqrtUpper,
         uint128 liquidity,
         bool roundUp
-    ) external view returns (uint256) {
+    )
+        external
+        view
+        returns (uint256)
+    {
         uint256 gasBefore = gasleft();
         SqrtPriceMath.getAmount1Delta(sqrtLower, sqrtUpper, liquidity, roundUp);
         return gasBefore - gasleft();

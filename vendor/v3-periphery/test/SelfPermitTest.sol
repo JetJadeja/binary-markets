@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity =0.8.25;
+pragma solidity 0.8.29;
 
-import '../base/SelfPermit.sol';
+import "../base/SelfPermit.sol";
 
 /// @dev Same as SelfPermit but not abstract
-contract SelfPermitTest is SelfPermit {
-
-}
+contract SelfPermitTest is SelfPermit { }

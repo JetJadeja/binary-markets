@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity =0.8.25;
+pragma solidity 0.8.29;
 
-import {UniswapV3Pool} from '../UniswapV3Pool.sol';
+import { UniswapV3Pool } from "../UniswapV3Pool.sol";
 
 // used for testing time dependent behavior
 contract MockTimeUniswapV3Pool is UniswapV3Pool {
     // Monday, October 5, 2020 9:00:00 AM GMT-05:00
-    uint256 public time = 1601906400;
+    uint256 public time = 1_601_906_400;
 
     function setFeeGrowthGlobal0X128(uint256 _feeGrowthGlobal0X128) external {
         feeGrowthGlobal0X128 = _feeGrowthGlobal0X128;

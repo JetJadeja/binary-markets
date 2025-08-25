@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-pragma solidity =0.8.25;
+pragma solidity 0.8.29;
 
-import './BlockTimestamp.sol';
+import "./BlockTimestamp.sol";
 
 abstract contract PeripheryValidation is BlockTimestamp {
     modifier checkDeadline(uint256 deadline) {
-        require(_blockTimestamp() <= deadline, 'Transaction too old');
+        require(_blockTimestamp() <= deadline, "Transaction too old");
         _;
     }
 }

@@ -1,22 +1,22 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-pragma solidity =0.8.25;
+pragma solidity 0.8.29;
 pragma abicoder v2;
 
-import '@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol';
-import '@uniswap/v3-core/contracts/libraries/FixedPoint128.sol';
-import '@uniswap/v3-core/contracts/libraries/FullMath.sol';
+import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
+import "@uniswap/v3-core/contracts/libraries/FixedPoint128.sol";
+import "@uniswap/v3-core/contracts/libraries/FullMath.sol";
 
-import './interfaces/INonfungiblePositionManager.sol';
-import './interfaces/INonfungibleTokenPositionDescriptor.sol';
-import './libraries/PositionKey.sol';
-import './libraries/PoolAddress.sol';
-import './base/LiquidityManagement.sol';
-import './base/PeripheryImmutableState.sol';
-import './base/Multicall.sol';
-import './base/ERC721Permit.sol';
-import './base/PeripheryValidation.sol';
-import './base/SelfPermit.sol';
-import './base/PoolInitializer.sol';
+import "./interfaces/INonfungiblePositionManager.sol";
+import "./interfaces/INonfungibleTokenPositionDescriptor.sol";
+import "./libraries/PositionKey.sol";
+import "./libraries/PoolAddress.sol";
+import "./base/LiquidityManagement.sol";
+import "./base/PeripheryImmutableState.sol";
+import "./base/Multicall.sol";
+import "./base/ERC721Permit.sol";
+import "./base/PeripheryValidation.sol";
+import "./base/SelfPermit.sol";
+import "./base/PoolInitializer.sol";
 
 /// @title NFT positions
 /// @notice Wraps Uniswap V3 positions in the ERC721 non-fungible token interface
@@ -72,7 +72,10 @@ contract NonfungiblePositionManager is
         address _factory,
         address _WETH9,
         address _tokenDescriptor_
-    ) ERC721Permit('Uniswap V3 Positions NFT-V1', 'UNI-V3-POS', '1') PeripheryImmutableState(_factory, _WETH9) {
+    )
+        ERC721Permit("Uniswap V3 Positions NFT-V1", "UNI-V3-POS", "1")
+        PeripheryImmutableState(_factory, _WETH9)
+    {
         _tokenDescriptor = _tokenDescriptor_;
     }
 
@@ -97,7 +100,7 @@ contract NonfungiblePositionManager is
         )
     {
         Position memory position = _positions[tokenId];
-        require(position.poolId != 0, 'Invalid token ID');
+        require(position.poolId != 0, "Invalid token ID");
         PoolAddress.PoolKey memory poolKey = _poolIdToPoolKey[position.poolId];
         return (
             position.nonce,
@@ -130,12 +133,7 @@ contract NonfungiblePositionManager is
         payable
         override
         checkDeadline(params.deadline)
-        returns (
-            uint256 tokenId,
-            uint128 liquidity,
-            uint256 amount0,
-            uint256 amount1
-        )
+        returns (uint256 tokenId, uint128 liquidity, uint256 amount0, uint256 amount1)
     {
         IUniswapV3Pool pool;
         (liquidity, amount0, amount1, pool) = addLiquidity(
@@ -156,12 +154,11 @@ contract NonfungiblePositionManager is
         _mint(params.recipient, (tokenId = _nextId++));
 
         bytes32 positionKey = PositionKey.compute(address(this), params.tickLower, params.tickUpper);
-        (, uint256 feeGrowthInside0LastX128, uint256 feeGrowthInside1LastX128, , ) = pool.positions(positionKey);
+        (, uint256 feeGrowthInside0LastX128, uint256 feeGrowthInside1LastX128,,) = pool.positions(positionKey);
 
         // idempotent set
         uint80 poolId = cachePoolKey(
-            address(pool),
-            PoolAddress.PoolKey({token0: params.token0, token1: params.token1, fee: params.fee})
+            address(pool), PoolAddress.PoolKey({ token0: params.token0, token1: params.token1, fee: params.fee })
         );
 
         _positions[tokenId] = Position({
@@ -181,7 +178,7 @@ contract NonfungiblePositionManager is
     }
 
     modifier isAuthorizedForToken(uint256 tokenId) {
-        require(_isApprovedOrOwner(msg.sender, tokenId), 'Not approved');
+        require(_isApprovedOrOwner(msg.sender, tokenId), "Not approved");
         _;
     }
 
@@ -191,7 +188,7 @@ contract NonfungiblePositionManager is
     }
 
     // save bytecode by removing implementation of unused method
-    function baseURI() public pure returns (string memory) {}
+    function baseURI() public pure returns (string memory) { }
 
     /// @inheritdoc INonfungiblePositionManager
     function increaseLiquidity(IncreaseLiquidityParams calldata params)
@@ -199,11 +196,7 @@ contract NonfungiblePositionManager is
         payable
         override
         checkDeadline(params.deadline)
-        returns (
-            uint128 liquidity,
-            uint256 amount0,
-            uint256 amount1
-        )
+        returns (uint128 liquidity, uint256 amount0, uint256 amount1)
     {
         Position storage position = _positions[params.tokenId];
 
@@ -228,20 +221,16 @@ contract NonfungiblePositionManager is
         bytes32 positionKey = PositionKey.compute(address(this), position.tickLower, position.tickUpper);
 
         // this is now updated to the current transaction
-        (, uint256 feeGrowthInside0LastX128, uint256 feeGrowthInside1LastX128, , ) = pool.positions(positionKey);
+        (, uint256 feeGrowthInside0LastX128, uint256 feeGrowthInside1LastX128,,) = pool.positions(positionKey);
 
         position.tokensOwed0 += uint128(
             FullMath.mulDiv(
-                feeGrowthInside0LastX128 - position.feeGrowthInside0LastX128,
-                position.liquidity,
-                FixedPoint128.Q128
+                feeGrowthInside0LastX128 - position.feeGrowthInside0LastX128, position.liquidity, FixedPoint128.Q128
             )
         );
         position.tokensOwed1 += uint128(
             FullMath.mulDiv(
-                feeGrowthInside1LastX128 - position.feeGrowthInside1LastX128,
-                position.liquidity,
-                FixedPoint128.Q128
+                feeGrowthInside1LastX128 - position.feeGrowthInside1LastX128, position.liquidity, FixedPoint128.Q128
             )
         );
 
@@ -271,28 +260,22 @@ contract NonfungiblePositionManager is
         IUniswapV3Pool pool = IUniswapV3Pool(PoolAddress.computeAddress(factory, poolKey));
         (amount0, amount1) = pool.burn(position.tickLower, position.tickUpper, params.liquidity);
 
-        require(amount0 >= params.amount0Min && amount1 >= params.amount1Min, 'Price slippage check');
+        require(amount0 >= params.amount0Min && amount1 >= params.amount1Min, "Price slippage check");
 
         bytes32 positionKey = PositionKey.compute(address(this), position.tickLower, position.tickUpper);
         // this is now updated to the current transaction
-        (, uint256 feeGrowthInside0LastX128, uint256 feeGrowthInside1LastX128, , ) = pool.positions(positionKey);
+        (, uint256 feeGrowthInside0LastX128, uint256 feeGrowthInside1LastX128,,) = pool.positions(positionKey);
 
-        position.tokensOwed0 +=
-            uint128(amount0) +
-            uint128(
+        position.tokensOwed0 += uint128(amount0)
+            + uint128(
                 FullMath.mulDiv(
-                    feeGrowthInside0LastX128 - position.feeGrowthInside0LastX128,
-                    positionLiquidity,
-                    FixedPoint128.Q128
+                    feeGrowthInside0LastX128 - position.feeGrowthInside0LastX128, positionLiquidity, FixedPoint128.Q128
                 )
             );
-        position.tokensOwed1 +=
-            uint128(amount1) +
-            uint128(
+        position.tokensOwed1 += uint128(amount1)
+            + uint128(
                 FullMath.mulDiv(
-                    feeGrowthInside1LastX128 - position.feeGrowthInside1LastX128,
-                    positionLiquidity,
-                    FixedPoint128.Q128
+                    feeGrowthInside1LastX128 - position.feeGrowthInside1LastX128, positionLiquidity, FixedPoint128.Q128
                 )
             );
 
@@ -320,29 +303,25 @@ contract NonfungiblePositionManager is
 
         PoolAddress.PoolKey memory poolKey = _poolIdToPoolKey[position.poolId];
 
-        IUniswapV3Pool pool = IUniswapV3Pool(IUniswapV3Factory(factory).getPool(poolKey.token0, poolKey.token1, poolKey.fee));
+        IUniswapV3Pool pool =
+            IUniswapV3Pool(IUniswapV3Factory(factory).getPool(poolKey.token0, poolKey.token1, poolKey.fee));
 
         (uint128 tokensOwed0, uint128 tokensOwed1) = (position.tokensOwed0, position.tokensOwed1);
 
         // trigger an update of the position fees owed and fee growth snapshots if it has any liquidity
         if (position.liquidity > 0) {
             pool.burn(position.tickLower, position.tickUpper, 0);
-            (, uint256 feeGrowthInside0LastX128, uint256 feeGrowthInside1LastX128, , ) = pool.positions(
-                PositionKey.compute(address(this), position.tickLower, position.tickUpper)
-            );
+            (, uint256 feeGrowthInside0LastX128, uint256 feeGrowthInside1LastX128,,) =
+                pool.positions(PositionKey.compute(address(this), position.tickLower, position.tickUpper));
 
             tokensOwed0 += uint128(
                 FullMath.mulDiv(
-                    feeGrowthInside0LastX128 - position.feeGrowthInside0LastX128,
-                    position.liquidity,
-                    FixedPoint128.Q128
+                    feeGrowthInside0LastX128 - position.feeGrowthInside0LastX128, position.liquidity, FixedPoint128.Q128
                 )
             );
             tokensOwed1 += uint128(
                 FullMath.mulDiv(
-                    feeGrowthInside1LastX128 - position.feeGrowthInside1LastX128,
-                    position.liquidity,
-                    FixedPoint128.Q128
+                    feeGrowthInside1LastX128 - position.feeGrowthInside1LastX128, position.liquidity, FixedPoint128.Q128
                 )
             );
 
@@ -357,15 +336,11 @@ contract NonfungiblePositionManager is
         );
 
         // the actual amounts collected are returned
-        (amount0, amount1) = pool.collect(
-            recipient,
-            position.tickLower,
-            position.tickUpper,
-            amount0Collect,
-            amount1Collect
-        );
+        (amount0, amount1) =
+            pool.collect(recipient, position.tickLower, position.tickUpper, amount0Collect, amount1Collect);
 
-        // sometimes there will be a few less wei than expected due to rounding down in core, but we just subtract the full amount expected
+        // sometimes there will be a few less wei than expected due to rounding down in core, but we just subtract the
+        // full amount expected
         // instead of the actual amount so we can burn the token
         (position.tokensOwed0, position.tokensOwed1) = (tokensOwed0 - amount0Collect, tokensOwed1 - amount1Collect);
 
@@ -375,7 +350,7 @@ contract NonfungiblePositionManager is
     /// @inheritdoc INonfungiblePositionManager
     function burn(uint256 tokenId) external payable override isAuthorizedForToken(tokenId) {
         Position storage position = _positions[tokenId];
-        require(position.liquidity == 0 && position.tokensOwed0 == 0 && position.tokensOwed1 == 0, 'Not cleared');
+        require(position.liquidity == 0 && position.tokensOwed0 == 0 && position.tokensOwed1 == 0, "Not cleared");
         delete _positions[tokenId];
         _burn(tokenId);
     }
@@ -383,8 +358,9 @@ contract NonfungiblePositionManager is
     function _getAndIncrementNonce(uint256 tokenId) internal override returns (uint256) {
         return uint256(_positions[tokenId].nonce++);
     }
+
     function getApproved(uint256 tokenId) public view override(ERC721, IERC721) returns (address) {
-        require(_exists(tokenId), 'ERC721: approved query for nonexistent token');
+        require(_exists(tokenId), "ERC721: approved query for nonexistent token");
 
         return _positions[tokenId].operator;
     }

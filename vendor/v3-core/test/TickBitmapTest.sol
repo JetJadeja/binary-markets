@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity =0.8.25;
+pragma solidity 0.8.29;
 
-import {TickBitmap} from '../libraries/TickBitmap.sol';
+import { TickBitmap } from "../libraries/TickBitmap.sol";
 
 contract TickBitmapTest {
     using TickBitmap for mapping(int16 => uint256);
@@ -18,7 +18,10 @@ contract TickBitmapTest {
         return gasBefore - gasleft();
     }
 
-    function nextInitializedTickWithinOneWord(int24 tick, bool lte)
+    function nextInitializedTickWithinOneWord(
+        int24 tick,
+        bool lte
+    )
         external
         view
         returns (int24 next, bool initialized)

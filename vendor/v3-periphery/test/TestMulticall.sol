@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity =0.8.25;
+pragma solidity 0.8.29;
 pragma abicoder v2;
 
-import '../base/Multicall.sol';
+import "../base/Multicall.sol";
 
 contract TestMulticall is Multicall {
     function functionThatRevertsWithError(string memory error) external pure {
@@ -15,7 +15,7 @@ contract TestMulticall is Multicall {
     }
 
     function functionThatReturnsTuple(uint256 a, uint256 b) external pure returns (Tuple memory tuple) {
-        tuple = Tuple({b: a, a: b});
+        tuple = Tuple({ b: a, a: b });
     }
 
     uint256 public paid;

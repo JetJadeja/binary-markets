@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity =0.8.25;
+pragma solidity 0.8.29;
 
-import {Oracle} from '../libraries/Oracle.sol';
+import { Oracle } from "../libraries/Oracle.sol";
 
 contract OracleTest {
-    using Oracle for Oracle.Observation[65535];
+    using Oracle for Oracle.Observation[65_535];
 
-    Oracle.Observation[65535] public observations;
+    Oracle.Observation[65_535] public observations;
 
     uint32 public time;
     int24 public tick;
@@ -22,7 +22,7 @@ contract OracleTest {
     }
 
     function initialize(InitializeParams calldata params) external {
-        require(cardinality == 0, 'already initialized');
+        require(cardinality == 0, "already initialized");
         time = params.time;
         tick = params.tick;
         liquidity = params.liquidity;
@@ -60,14 +60,8 @@ contract OracleTest {
 
         for (uint256 i = 0; i < params.length; i++) {
             _time += params[i].advanceTimeBy;
-            (_index, _cardinality) = observations.write(
-                _index,
-                _time,
-                _tick,
-                _liquidity,
-                _cardinality,
-                _cardinalityNext
-            );
+            (_index, _cardinality) =
+                observations.write(_index, _time, _tick, _liquidity, _cardinality, _cardinalityNext);
             _tick = params[i].tick;
             _liquidity = params[i].liquidity;
         }

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity =0.8.25;
+pragma solidity 0.8.29;
 
-import {Tick} from '../libraries/Tick.sol';
+import { Tick } from "../libraries/Tick.sol";
 
 contract TickTest {
     using Tick for mapping(int24 => Tick.Info);
@@ -22,7 +22,11 @@ contract TickTest {
         int24 tickCurrent,
         uint256 feeGrowthGlobal0X128,
         uint256 feeGrowthGlobal1X128
-    ) external view returns (uint256 feeGrowthInside0X128, uint256 feeGrowthInside1X128) {
+    )
+        external
+        view
+        returns (uint256 feeGrowthInside0X128, uint256 feeGrowthInside1X128)
+    {
         return ticks.getFeeGrowthInside(tickLower, tickUpper, tickCurrent, feeGrowthGlobal0X128, feeGrowthGlobal1X128);
     }
 
@@ -37,20 +41,22 @@ contract TickTest {
         uint32 time,
         bool upper,
         uint128 maxLiquidity
-    ) external returns (bool flipped) {
-        return
-            ticks.update(
-                tick,
-                tickCurrent,
-                liquidityDelta,
-                feeGrowthGlobal0X128,
-                feeGrowthGlobal1X128,
-                secondsPerLiquidityCumulativeX128,
-                tickCumulative,
-                time,
-                upper,
-                maxLiquidity
-            );
+    )
+        external
+        returns (bool flipped)
+    {
+        return ticks.update(
+            tick,
+            tickCurrent,
+            liquidityDelta,
+            feeGrowthGlobal0X128,
+            feeGrowthGlobal1X128,
+            secondsPerLiquidityCumulativeX128,
+            tickCumulative,
+            time,
+            upper,
+            maxLiquidity
+        );
     }
 
     function clear(int24 tick) external {
@@ -64,15 +70,12 @@ contract TickTest {
         uint160 secondsPerLiquidityCumulativeX128,
         int56 tickCumulative,
         uint32 time
-    ) external returns (int128 liquidityNet) {
-        return
-            ticks.cross(
-                tick,
-                feeGrowthGlobal0X128,
-                feeGrowthGlobal1X128,
-                secondsPerLiquidityCumulativeX128,
-                tickCumulative,
-                time
-            );
+    )
+        external
+        returns (int128 liquidityNet)
+    {
+        return ticks.cross(
+            tick, feeGrowthGlobal0X128, feeGrowthGlobal1X128, secondsPerLiquidityCumulativeX128, tickCumulative, time
+        );
     }
 }

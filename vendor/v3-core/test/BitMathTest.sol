@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity =0.8.25;
+pragma solidity 0.8.29;
 
-import {BitMath} from '../libraries/BitMath.sol';
+import { BitMath } from "../libraries/BitMath.sol";
 
 contract BitMathTest {
     function mostSignificantBit(uint256 x) external pure returns (uint8 r) {

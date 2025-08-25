@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity =0.8.25;
+pragma solidity 0.8.29;
 
-import {SwapMath} from '../libraries/SwapMath.sol';
+import { SwapMath } from "../libraries/SwapMath.sol";
 
 contract SwapMathTest {
     function computeSwapStep(
@@ -13,12 +13,7 @@ contract SwapMathTest {
     )
         external
         pure
-        returns (
-            uint160 sqrtQ,
-            uint256 amountIn,
-            uint256 amountOut,
-            uint256 feeAmount
-        )
+        returns (uint160 sqrtQ, uint256 amountIn, uint256 amountOut, uint256 feeAmount)
     {
         return SwapMath.computeSwapStep(sqrtP, sqrtPTarget, liquidity, amountRemaining, feePips);
     }
@@ -29,7 +24,11 @@ contract SwapMathTest {
         uint128 liquidity,
         int256 amountRemaining,
         uint24 feePips
-    ) external view returns (uint256) {
+    )
+        external
+        view
+        returns (uint256)
+    {
         uint256 gasBefore = gasleft();
         SwapMath.computeSwapStep(sqrtP, sqrtPTarget, liquidity, amountRemaining, feePips);
         return gasBefore - gasleft();

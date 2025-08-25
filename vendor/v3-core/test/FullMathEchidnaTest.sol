@@ -1,14 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity =0.8.25;
+pragma solidity 0.8.29;
 
-import {FullMath} from '../libraries/FullMath.sol';
+import { FullMath } from "../libraries/FullMath.sol";
 
 contract FullMathEchidnaTest {
-    function checkMulDivRounding(
-        uint256 x,
-        uint256 y,
-        uint256 d
-    ) external pure {
+    function checkMulDivRounding(uint256 x, uint256 y, uint256 d) external pure {
         unchecked {
             require(d > 0);
 
@@ -23,11 +19,7 @@ contract FullMathEchidnaTest {
         }
     }
 
-    function checkMulDiv(
-        uint256 x,
-        uint256 y,
-        uint256 d
-    ) external pure {
+    function checkMulDiv(uint256 x, uint256 y, uint256 d) external pure {
         unchecked {
             require(d > 0);
             uint256 z = FullMath.mulDiv(x, y, d);
@@ -36,7 +28,8 @@ contract FullMathEchidnaTest {
                 return;
             }
 
-            // recompute x and y via mulDiv of the result of floor(x*y/d), should always be less than original inputs by < d
+            // recompute x and y via mulDiv of the result of floor(x*y/d), should always be less than original inputs by
+            // < d
             uint256 x2 = FullMath.mulDiv(z, d, y);
             uint256 y2 = FullMath.mulDiv(z, d, x);
             assert(x2 <= x);
@@ -47,11 +40,7 @@ contract FullMathEchidnaTest {
         }
     }
 
-    function checkMulDivRoundingUp(
-        uint256 x,
-        uint256 y,
-        uint256 d
-    ) external pure {
+    function checkMulDivRoundingUp(uint256 x, uint256 y, uint256 d) external pure {
         unchecked {
             require(d > 0);
             uint256 z = FullMath.mulDivRoundingUp(x, y, d);
@@ -60,7 +49,8 @@ contract FullMathEchidnaTest {
                 return;
             }
 
-            // recompute x and y via mulDiv of the result of floor(x*y/d), should always be less than original inputs by < d
+            // recompute x and y via mulDiv of the result of floor(x*y/d), should always be less than original inputs by
+            // < d
             uint256 x2 = FullMath.mulDiv(z, d, y);
             uint256 y2 = FullMath.mulDiv(z, d, x);
             assert(x2 >= x);

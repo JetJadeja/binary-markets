@@ -1,11 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity =0.8.25;
+pragma solidity 0.8.29;
 pragma abicoder v2;
 
-import '../libraries/OracleLibrary.sol';
+import "../libraries/OracleLibrary.sol";
 
 contract OracleTest {
-    function consult(address pool, uint32 secondsAgo)
+    function consult(
+        address pool,
+        uint32 secondsAgo
+    )
         public
         view
         returns (int24 arithmeticMeanTick, uint128 harmonicMeanLiquidity)
@@ -18,7 +21,11 @@ contract OracleTest {
         uint128 baseAmount,
         address baseToken,
         address quoteToken
-    ) public pure returns (uint256 quoteAmount) {
+    )
+        public
+        pure
+        returns (uint256 quoteAmount)
+    {
         quoteAmount = OracleLibrary.getQuoteAtTick(tick, baseAmount, baseToken, quoteToken);
     }
 
@@ -34,7 +41,11 @@ contract OracleTest {
         uint128 baseAmount,
         address baseToken,
         address quoteToken
-    ) public view returns (uint256) {
+    )
+        public
+        view
+        returns (uint256)
+    {
         uint256 gasBefore = gasleft();
         OracleLibrary.getQuoteAtTick(tick, baseAmount, baseToken, quoteToken);
         return gasBefore - gasleft();
@@ -61,7 +72,14 @@ contract OracleTest {
         return OracleLibrary.getWeightedArithmeticMeanTick(observations);
     }
 
-    function getChainedPrice(address[] memory tokens, int24[] memory ticks) public pure returns (int256 syntheticTick) {
+    function getChainedPrice(
+        address[] memory tokens,
+        int24[] memory ticks
+    )
+        public
+        pure
+        returns (int256 syntheticTick)
+    {
         return OracleLibrary.getChainedPrice(tokens, ticks);
     }
 }

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity =0.8.25;
+pragma solidity 0.8.29;
 
-import {TickMath} from '../libraries/TickMath.sol';
+import { TickMath } from "../libraries/TickMath.sol";
 
 contract TickMathTest {
     function getSqrtRatioAtTick(int24 tick) external pure returns (uint160) {
