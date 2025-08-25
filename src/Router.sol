@@ -15,6 +15,8 @@ import { SafeTransferLib } from "solady/utils/SafeTransferLib.sol";
 /// @author Jet Jadeja <jjadeja@usc.edu>
 /// @notice Enable direct swaps between collateral and positions via Uniswap V3
 contract Router is IRouter {
+    using SafeTransferLib for address;
+
     /*///////////////////////////////////////////////////////////////
                                 IMMUTABLES
     //////////////////////////////////////////////////////////////*/
@@ -92,14 +94,14 @@ contract Router is IRouter {
         IUniswapV3Pool(pool).initialize(sqrtPriceX96);
 
         // Approve market to spend collateral
-        SafeTransferLib.safeApprove(collateralToken, market, initialLiquidity);
+        collateralToken.safeApprove(market, initialLiquidity);
 
         // Split collateral into equal amounts of position tokens
         IMarket(market).split(initialLiquidity, address(this));
 
         // Approve position manager to spend both tokens
-        SafeTransferLib.safeApprove(tokenA, address(positionManager), initialLiquidity);
-        SafeTransferLib.safeApprove(tokenB, address(positionManager), initialLiquidity);
+        token0.safeApprove(address(positionManager), initialLiquidity);
+        token1.safeApprove(address(positionManager), initialLiquidity);
 
         // Calculate tick spacing based on fee
         int24 tickSpacing = IUniswapV3Pool(pool).tickSpacing();

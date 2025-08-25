@@ -14,6 +14,8 @@ import { SafeTransferLib } from "solady/utils/SafeTransferLib.sol";
 /// @author Jet Jadeja <jjadeja@usc.edu>
 /// @notice Deploy and track prediction markets with deterministic addresses
 contract MarketFactory is IMarketFactory, Ownable {
+    using SafeTransferLib for address;
+
     /*///////////////////////////////////////////////////////////////
                             IMMUTABLES
     //////////////////////////////////////////////////////////////*/
@@ -78,7 +80,7 @@ contract MarketFactory is IMarketFactory, Ownable {
         tokenB = Market(market).tokenB();
 
         // Transfer collateral from msg.sender to router for initial liquidity
-        SafeTransferLib.safeTransferFrom(collateralToken, msg.sender, router, initialCollateral);
+        collateralToken.safeTransferFrom(msg.sender, router, initialCollateral);
 
         // Deploy Uniswap V3 pool and add initial liquidity
         IRouter(router).deployPool(market, tokenA, tokenB, initialCollateral);

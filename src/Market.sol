@@ -11,6 +11,8 @@ import { FixedPointMathLib } from "solady/utils/FixedPointMathLib.sol";
 /// @author Jet Jadeja <jjadeja@usc.edu>
 /// @notice Handle splitting/merging of collateral into position tokens
 contract Market is IMarket {
+    using SafeTransferLib for address;
+
     /*///////////////////////////////////////////////////////////////
                             IMMUTABLES
     //////////////////////////////////////////////////////////////*/
@@ -59,15 +61,15 @@ contract Market is IMarket {
     /// @return The amount of position tokens minted (equal to collateral amount)
     function split(uint256 amount, address recipient) external returns (uint256) {
         // Transfer collateral from sender to this contract
-        SafeTransferLib.safeTransferFrom(collateralToken, msg.sender, address(this), amount);
-        
+        collateralToken.safeTransferFrom(msg.sender, address(this), amount);
+
         // Mint equal amounts of both position tokens to recipient
         PositionToken(tokenA).mint(recipient, amount);
         PositionToken(tokenB).mint(recipient, amount);
-        
+
         // Emit split event
         emit Split(msg.sender, recipient, amount);
-        
+
         return amount;
     }
 
@@ -80,13 +82,13 @@ contract Market is IMarket {
         // Burn equal amounts of both position tokens from sender
         PositionToken(tokenA).burn(msg.sender, amount);
         PositionToken(tokenB).burn(msg.sender, amount);
-        
+
         // Transfer collateral from this contract to recipient
-        SafeTransferLib.safeTransfer(collateralToken, recipient, amount);
-        
+        collateralToken.safeTransfer(recipient, amount);
+
         // Emit merge event
         emit Merge(msg.sender, recipient, amount);
-        
+
         return amount;
     }
 
