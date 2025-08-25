@@ -79,6 +79,9 @@ contract MarketFactory is IMarketFactory, Ownable {
         tokenA = Market(market).tokenA();
         tokenB = Market(market).tokenB();
 
+        // Transfer collateral from user to factory
+        collateralToken.safeTransferFrom(msg.sender, address(this), initialCollateral);
+
         // Approve market to spend collateral
         collateralToken.safeApprove(market, initialCollateral);
 
