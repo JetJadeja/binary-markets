@@ -9,11 +9,10 @@ interface IRouter {
     //////////////////////////////////////////////////////////////*/
 
     /// @notice Deploys a new Uniswap V3 pool for a market
-    /// @param market The market address
     /// @param tokenA The address of token A
     /// @param tokenB The address of token B
     /// @param fee The fee for the pool
-    function deployPool(address market, address tokenA, address tokenB, uint256 fee) external;
+    function deployPool(address tokenA, address tokenB, uint24 fee) external returns (address pool);
 
     /// @notice Swaps collateral for a position token
     /// @param market The market address

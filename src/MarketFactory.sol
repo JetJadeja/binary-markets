@@ -2,6 +2,7 @@
 pragma solidity 0.8.29;
 
 import { IMarketFactory } from "./interfaces/IMarketFactory.sol";
+import { IRouter } from "./interfaces/IRouter.sol";
 
 import { Market } from "./Market.sol";
 import { PositionToken } from "./PositionToken.sol";
@@ -31,14 +32,18 @@ contract MarketFactory is IMarketFactory, Ownable {
     /// @notice Minimum initial collateral amount for a market
     uint256 public minimumCollateral;
 
+    /// @notice Default fee tier for Uniswap V3 pools (500 = 0.05%, lowest tier)
+    uint24 public constant DEFAULT_POOL_FEE = 500;
+
     /*///////////////////////////////////////////////////////////////
                           CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
     /// @notice Creates a new MarketFactory
     /// @param _collateralToken The collateral token for all markets
-    constructor(address _collateralToken) {
+    constructor(address _collateralToken, uint256 _minimumCollateral) {
         collateralToken = _collateralToken;
+        minimumCollateral = _minimumCollateral;
 
         // Initialize the owner
         _initializeOwner(msg.sender);
@@ -62,6 +67,9 @@ contract MarketFactory is IMarketFactory, Ownable {
         // Check if the initial collateral amount is greater than the minimum collateral amount
         require(initialCollateral >= minimumCollateral, "Initial collateral must be greater than minimum");
 
+        // Check that router is set
+        require(router != address(0), "Router not set");
+
         // Deploy market using CREATE2
         // Note that if the market already exists, this will revert
         bytes32 salt = keccak256(abi.encodePacked(name));
@@ -70,6 +78,9 @@ contract MarketFactory is IMarketFactory, Ownable {
         // Get token addresses
         tokenA = Market(market).tokenA();
         tokenB = Market(market).tokenB();
+
+        // Deploy Uniswap V3 pool for the market's position tokens
+        IRouter(router).deployPool(tokenA, tokenB, DEFAULT_POOL_FEE);
 
         // Emit event
         emit MarketCreated(market, tokenA, tokenB, name, msg.sender);

@@ -3,6 +3,10 @@ pragma solidity 0.8.29;
 
 import { IRouter } from "./interfaces/IRouter.sol";
 
+import { IUniswapV3Factory } from "vendor/v3-core/interfaces/IUniswapV3Factory.sol";
+import { IUniswapV3Pool } from "vendor/v3-core/interfaces/IUniswapV3Pool.sol";
+import { TickMath } from "vendor/v3-core/libraries/TickMath.sol";
+
 /// @title Router
 /// @author Jet Jadeja <jjadeja@usc.edu>
 /// @notice Enable direct swaps between collateral and positions via Uniswap V3
@@ -14,9 +18,17 @@ contract Router is IRouter {
     /// @notice The market factory contract address
     address public immutable factory;
 
+    /// @notice The Uniswap V3 factory contract address
+    IUniswapV3Factory public immutable uniswapV3Factory;
+
     /*///////////////////////////////////////////////////////////////
-                         STATE VARIABLES
+                         MODIFIERS
     //////////////////////////////////////////////////////////////*/
+
+    modifier onlyFactory() {
+        if (msg.sender != factory) revert("Caller must be factory");
+        _;
+    }
 
     /*///////////////////////////////////////////////////////////////
                           CONSTRUCTOR
@@ -24,8 +36,10 @@ contract Router is IRouter {
 
     /// @notice Creates a new Router
     /// @param _factory The market factory address
-    constructor(address _factory) {
+    /// @param _uniswapV3Factory The Uniswap V3 factory address
+    constructor(address _factory, address _uniswapV3Factory) {
         factory = _factory;
+        uniswapV3Factory = IUniswapV3Factory(_uniswapV3Factory);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -33,11 +47,27 @@ contract Router is IRouter {
     //////////////////////////////////////////////////////////////*/
 
     /// @notice Deploys a new Uniswap V3 pool for a market
-    /// @param market The market address
+    /// @dev Only the factory contract can deploy pools
     /// @param tokenA The address of token A
     /// @param tokenB The address of token B
-    /// @param fee The fee for the pool
-    function deployPool(address market, address tokenA, address tokenB, uint256 fee) external { }
+    /// @param fee The fee for the pool (e.g., 3000 for 0.3%)
+    /// @return pool The address of the deployed pool
+    function deployPool(address tokenA, address tokenB, uint24 fee) external onlyFactory returns (address pool) {
+        // Order tokens as required by Uniswap (token0 < token1)
+        (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
+
+        // Create the pool
+        // No need to check if this pool already exists because the factory will revert if it does
+        pool = uniswapV3Factory.createPool(token0, token1, fee);
+
+        // Initialize the pool with 1:1 price ratio (equal value for both tokens)
+        // sqrtPriceX96 = sqrt(1) * 2^96 = 2^96
+        uint160 sqrtPriceX96 = 2 ** 96;
+        IUniswapV3Pool(pool).initialize(sqrtPriceX96);
+
+        // Return the pool address
+        return pool;
+    }
 
     /// @notice Swaps collateral tokens for position tokens through Uniswap V3
     /// @dev Splits collateral into positions, then swaps one position for the other via the pool
