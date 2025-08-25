@@ -2,10 +2,14 @@
 pragma solidity 0.8.29;
 
 import { IRouter } from "./interfaces/IRouter.sol";
+import { IMarket } from "./interfaces/IMarket.sol";
 
 import { IUniswapV3Factory } from "vendor/v3-core/interfaces/IUniswapV3Factory.sol";
 import { IUniswapV3Pool } from "vendor/v3-core/interfaces/IUniswapV3Pool.sol";
 import { TickMath } from "vendor/v3-core/libraries/TickMath.sol";
+import { NonfungiblePositionManager } from "vendor/v3-periphery/NonfungiblePositionManager.sol";
+
+import { SafeTransferLib } from "solady/utils/SafeTransferLib.sol";
 
 /// @title Router
 /// @author Jet Jadeja <jjadeja@usc.edu>
@@ -18,8 +22,14 @@ contract Router is IRouter {
     /// @notice The market factory contract address
     address public immutable factory;
 
+    /// @notice Collateral token address
+    address public immutable collateralToken;
+
     /// @notice The Uniswap V3 factory contract address
     IUniswapV3Factory public immutable uniswapV3Factory;
+
+    /// @notice The Uniswap V3 position manager for adding liquidity
+    NonfungiblePositionManager public immutable positionManager;
 
     /*///////////////////////////////////////////////////////////////
                          MODIFIERS
@@ -37,27 +47,42 @@ contract Router is IRouter {
     /// @notice Creates a new Router
     /// @param _factory The market factory address
     /// @param _uniswapV3Factory The Uniswap V3 factory address
-    constructor(address _factory, address _uniswapV3Factory) {
+    /// @param _positionManager The Uniswap V3 position manager address
+    constructor(address _factory, address _collateralToken, address _uniswapV3Factory, address _positionManager) {
         factory = _factory;
+        collateralToken = _collateralToken;
         uniswapV3Factory = IUniswapV3Factory(_uniswapV3Factory);
+        positionManager = NonfungiblePositionManager(_positionManager);
     }
 
     /*///////////////////////////////////////////////////////////////
                         EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice Deploys a new Uniswap V3 pool for a market
-    /// @dev Only the factory contract can deploy pools
+    /// @notice Deploys a new Uniswap V3 pool for a market and adds initial liquidity
+    /// @dev Only the factory contract can deploy pools. Expects collateral to be transferred before calling.
+    /// @param market The market address for splitting collateral
     /// @param tokenA The address of token A
     /// @param tokenB The address of token B
-    /// @param fee The fee for the pool (e.g., 3000 for 0.3%)
+    /// @param fee The fee for the pool (e.g., 500 for 0.05%)
+    /// @param initialLiquidity The amount of collateral to use for initial liquidity
     /// @return pool The address of the deployed pool
-    function deployPool(address tokenA, address tokenB, uint24 fee) external onlyFactory returns (address pool) {
+    /// @return tokenId The NFT token ID of the liquidity position
+    function deployPool(
+        address market,
+        address tokenA,
+        address tokenB,
+        uint24 fee,
+        uint256 initialLiquidity
+    )
+        external
+        onlyFactory
+        returns (address pool, uint256 tokenId)
+    {
         // Order tokens as required by Uniswap (token0 < token1)
         (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
 
         // Create the pool
-        // No need to check if this pool already exists because the factory will revert if it does
         pool = uniswapV3Factory.createPool(token0, token1, fee);
 
         // Initialize the pool with 1:1 price ratio (equal value for both tokens)
@@ -65,8 +90,41 @@ contract Router is IRouter {
         uint160 sqrtPriceX96 = 2 ** 96;
         IUniswapV3Pool(pool).initialize(sqrtPriceX96);
 
-        // Return the pool address
-        return pool;
+        // Approve market to spend collateral
+        SafeTransferLib.safeApprove(collateralToken, market, initialLiquidity);
+
+        // Split collateral into equal amounts of position tokens
+        IMarket(market).split(initialLiquidity, address(this));
+
+        // Approve position manager to spend both tokens
+        SafeTransferLib.safeApprove(tokenA, address(positionManager), initialLiquidity);
+        SafeTransferLib.safeApprove(tokenB, address(positionManager), initialLiquidity);
+
+        // Calculate tick spacing based on fee
+        int24 tickSpacing = IUniswapV3Pool(pool).tickSpacing();
+
+        // Calculate max tick range based on tick spacing
+        int24 tickLower = (TickMath.MIN_TICK / tickSpacing) * tickSpacing;
+        int24 tickUpper = (TickMath.MAX_TICK / tickSpacing) * tickSpacing;
+
+        // Add liquidity to the pool
+        (tokenId,,,) = positionManager.mint(
+            NonfungiblePositionManager.MintParams({
+                token0: token0,
+                token1: token1,
+                fee: fee,
+                tickLower: tickLower,
+                tickUpper: tickUpper,
+                amount0Desired: initialLiquidity,
+                amount1Desired: initialLiquidity,
+                amount0Min: initialLiquidity - 1, // Allow minimal slippage for rounding
+                amount1Min: initialLiquidity - 1,
+                recipient: factory, // Send LP NFT to factory
+                deadline: block.timestamp
+            })
+        );
+
+        return (pool, tokenId);
     }
 
     /// @notice Swaps collateral tokens for position tokens through Uniswap V3

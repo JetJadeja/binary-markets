@@ -8,6 +8,7 @@ import { Market } from "./Market.sol";
 import { PositionToken } from "./PositionToken.sol";
 
 import { Ownable } from "solady/auth/Ownable.sol";
+import { SafeTransferLib } from "solady/utils/SafeTransferLib.sol";
 
 /// @title MarketFactory
 /// @author Jet Jadeja <jjadeja@usc.edu>
@@ -79,8 +80,11 @@ contract MarketFactory is IMarketFactory, Ownable {
         tokenA = Market(market).tokenA();
         tokenB = Market(market).tokenB();
 
-        // Deploy Uniswap V3 pool for the market's position tokens
-        IRouter(router).deployPool(tokenA, tokenB, DEFAULT_POOL_FEE);
+        // Transfer collateral from msg.sender to router for initial liquidity
+        SafeTransferLib.safeTransferFrom(collateralToken, msg.sender, router, initialCollateral);
+
+        // Deploy Uniswap V3 pool and add initial liquidity
+        IRouter(router).deployPool(market, tokenA, tokenB, DEFAULT_POOL_FEE, initialCollateral);
 
         // Emit event
         emit MarketCreated(market, tokenA, tokenB, name, msg.sender);
