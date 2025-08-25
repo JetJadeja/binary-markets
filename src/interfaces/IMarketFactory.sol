@@ -28,6 +28,11 @@ interface IMarketFactory {
     /// @return tokenB The address of position token B
     function createMarket(string calldata name) external returns (address market, address tokenA, address tokenB);
 
+    /// @notice Sets the router address
+    /// @dev Only the owner can set the router address
+    /// @param _router The address of the router contract
+    function setRouter(address _router) external;
+
     /*///////////////////////////////////////////////////////////////
                               VIEW FUNCTIONS
     //////////////////////////////////////////////////////////////*/
@@ -40,4 +45,8 @@ interface IMarketFactory {
     /// @notice Returns the collateral token used by all markets
     /// @return The address of the collateral token
     function collateralToken() external view returns (address);
+
+    /// @notice Returns the router address
+    /// @return The address of the router contract
+    function router() external view returns (address);
 }

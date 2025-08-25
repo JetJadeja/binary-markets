@@ -8,6 +8,13 @@ interface IRouter {
                            EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
+    /// @notice Deploys a new Uniswap V3 pool for a market
+    /// @param market The market address
+    /// @param tokenA The address of token A
+    /// @param tokenB The address of token B
+    /// @param fee The fee for the pool
+    function deployPool(address market, address tokenA, address tokenB, uint256 fee) external;
+
     /// @notice Swaps collateral for a position token
     /// @param market The market address
     /// @param buyTokenA True to buy token A, false to buy token B

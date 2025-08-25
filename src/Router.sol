@@ -32,6 +32,13 @@ contract Router is IRouter {
                         EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
+    /// @notice Deploys a new Uniswap V3 pool for a market
+    /// @param market The market address
+    /// @param tokenA The address of token A
+    /// @param tokenB The address of token B
+    /// @param fee The fee for the pool
+    function deployPool(address market, address tokenA, address tokenB, uint256 fee) external { }
+
     /// @notice Swaps collateral tokens for position tokens through Uniswap V3
     /// @dev Splits collateral into positions, then swaps one position for the other via the pool
     /// @param market The address of the prediction market

@@ -6,10 +6,12 @@ import { IMarketFactory } from "./interfaces/IMarketFactory.sol";
 import { Market } from "./Market.sol";
 import { PositionToken } from "./PositionToken.sol";
 
+import { Ownable } from "solady/auth/Ownable.sol";
+
 /// @title MarketFactory
 /// @author Jet Jadeja <jjadeja@usc.edu>
 /// @notice Deploy and track prediction markets with deterministic addresses
-contract MarketFactory is IMarketFactory {
+contract MarketFactory is IMarketFactory, Ownable {
     /*///////////////////////////////////////////////////////////////
                             IMMUTABLES
     //////////////////////////////////////////////////////////////*/
@@ -20,6 +22,13 @@ contract MarketFactory is IMarketFactory {
     address public immutable collateralToken;
 
     /*///////////////////////////////////////////////////////////////
+                            STATE VARIABLES
+    //////////////////////////////////////////////////////////////*/
+
+    /// @notice The address of the router contract
+    address public router;
+
+    /*///////////////////////////////////////////////////////////////
                           CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
@@ -27,6 +36,9 @@ contract MarketFactory is IMarketFactory {
     /// @param _collateralToken The collateral token for all markets
     constructor(address _collateralToken) {
         collateralToken = _collateralToken;
+
+        // Initialize the owner
+        _initializeOwner(msg.sender);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -69,5 +81,12 @@ contract MarketFactory is IMarketFactory {
         }
 
         return market;
+    }
+
+    /// @notice Sets the router address
+    /// @dev Only the owner can set the router address
+    /// @param _router The address of the router contract
+    function setRouter(address _router) external onlyOwner {
+        router = _router;
     }
 }
