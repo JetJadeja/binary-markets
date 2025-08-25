@@ -56,20 +56,39 @@ contract Market is IMarket {
     /// @dev Takes collateral from sender and mints equal amounts of tokenA and tokenB to recipient
     /// @param amount The amount of collateral to split
     /// @param recipient The address to receive the position tokens
-    /// @param data Callback data to pass to the sender after minting
     /// @return The amount of position tokens minted (equal to collateral amount)
-    function split(uint256 amount, address recipient, bytes calldata data) external returns (uint256) {
-        // Transfer the collateral to this contract
+    function split(uint256 amount, address recipient) external returns (uint256) {
+        // Transfer collateral from sender to this contract
         SafeTransferLib.safeTransferFrom(collateralToken, msg.sender, address(this), amount);
+        
+        // Mint equal amounts of both position tokens to recipient
+        PositionToken(tokenA).mint(recipient, amount);
+        PositionToken(tokenB).mint(recipient, amount);
+        
+        // Emit split event
+        emit Split(msg.sender, recipient, amount);
+        
+        return amount;
     }
 
     /// @notice Merges equal amounts of position tokens back into collateral
     /// @dev Burns equal amounts of tokenA and tokenB from sender and returns collateral to recipient
     /// @param amount The amount of each position token to merge
     /// @param recipient The address to receive the collateral
-    /// @param data Callback data to pass to the sender after burning
     /// @return The amount of collateral returned (equal to position token amount)
-    function merge(uint256 amount, address recipient, bytes calldata data) external returns (uint256) { }
+    function merge(uint256 amount, address recipient) external returns (uint256) {
+        // Burn equal amounts of both position tokens from sender
+        PositionToken(tokenA).burn(msg.sender, amount);
+        PositionToken(tokenB).burn(msg.sender, amount);
+        
+        // Transfer collateral from this contract to recipient
+        SafeTransferLib.safeTransfer(collateralToken, recipient, amount);
+        
+        // Emit merge event
+        emit Merge(msg.sender, recipient, amount);
+        
+        return amount;
+    }
 
     /*///////////////////////////////////////////////////////////////
                          VIEW FUNCTIONS

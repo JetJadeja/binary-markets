@@ -28,16 +28,14 @@ interface IMarket {
     /// @notice Splits collateral into equal amounts of position tokens
     /// @param amount The amount of collateral to split
     /// @param recipient The address to receive the position tokens
-    /// @param data Callback data to pass to the sender
     /// @return The amount of position tokens minted
-    function split(uint256 amount, address recipient, bytes calldata data) external returns (uint256);
+    function split(uint256 amount, address recipient) external returns (uint256);
 
     /// @notice Merges equal amounts of position tokens back into collateral
     /// @param amount The amount of each position token to merge
     /// @param recipient The address to receive the collateral
-    /// @param data Callback data to pass to the sender
     /// @return The amount of collateral returned
-    function merge(uint256 amount, address recipient, bytes calldata data) external returns (uint256);
+    function merge(uint256 amount, address recipient) external returns (uint256);
 
     /*///////////////////////////////////////////////////////////////
                          VIEW FUNCTIONS
