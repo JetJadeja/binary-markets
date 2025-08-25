@@ -1,3 +1,5 @@
 @openzeppelin/contracts/=node_modules/@openzeppelin/contracts/
-forge-std/=node_modules/forge-std/
 vendor/=vendor/
+forge-std/=lib/forge-std/src/
+solady/=lib/solady/src/
+
