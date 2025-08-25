@@ -2,11 +2,12 @@
 pragma solidity 0.8.29;
 
 import { ERC20 } from "solady/tokens/ERC20.sol";
+import { Ownable } from "solady/auth/Ownable.sol";
 
 /// @title PositionToken
 /// @author binary-markets
 /// @notice Minimal ERC20 token representing binary outcome positions
-contract PositionToken is ERC20 {
+contract PositionToken is ERC20, Ownable {
     /*///////////////////////////////////////////////////////////////
                          STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
@@ -29,6 +30,29 @@ contract PositionToken is ERC20 {
     constructor(string memory name_, string memory symbol_) {
         _name = name_;
         _symbol = symbol_;
+
+        // Initialize the market address as the owner
+        _initializeOwner(msg.sender);
+    }
+
+    /*///////////////////////////////////////////////////////////////
+                            EXTERNAL FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @notice Mint tokens to an address
+    /// @dev Only the market contract (owner) can mint tokens
+    /// @param to The address to mint tokens to
+    /// @param amount The amount of tokens to mint
+    function mint(address to, uint256 amount) external onlyOwner {
+        _mint(to, amount);
+    }
+
+    /// @notice Burn tokens from an address
+    /// @dev Only the market contract (owner) can burn tokens
+    /// @param from The address to burn tokens from
+    /// @param amount The amount of tokens to burn
+    function burn(address from, uint256 amount) external onlyOwner {
+        _burn(from, amount);
     }
 
     /*///////////////////////////////////////////////////////////////
